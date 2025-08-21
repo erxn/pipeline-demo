@@ -1,0 +1,46 @@
+name: Deploy GO Apps to Railway
+
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on:  ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.5'
+
+      - name: Build
+        run: go build -v ./...
+
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.5'
+
+      - name: Test
+        run: go test -v ./...
+
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    env:
+      SVC_ID: 2c155794-3998-439d-afa1-58cf9e5f6e46
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: railway up --service=${{ env.SVC_ID }}
